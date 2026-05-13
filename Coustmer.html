@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NYINYISOE DOE SERVICE</title>
+    
+    <!-- Mobile App Settings -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DOE SERVICE">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/192/google-logo.png">
+
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 350px; }
+        h2 { color: #007bff; margin-bottom: 25px; }
+        .btn-google { background: white; border: 1px solid #ddd; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: bold; transition: 0.3s; }
+        .btn-google:hover { background: #f8f9fa; }
+        .user-info { margin-bottom: 20px; }
+        .user-photo { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; border: 3px solid #007bff; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button.action { flex: 1; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-in { background: #28a745; }
+        .btn-out { background: #dc3545; }
+        .hidden { display: none; }
+        #status { margin-top: 15px; font-size: 14px; font-weight: bold; }
+        .logout { margin-top: 25px; font-size: 12px; color: #888; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<!-- Login Page -->
+<div class="card" id="loginPage">
+    <h2>NYINYISOE DOE</h2>
+    <p style="color: #666; font-size: 14px;">ရှေ့ဆက်ရန် Google ဖြင့် Login ဝင်ပါ</p>
+    <button class="btn-google" onclick="login()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="20">
+        Google ဖြင့်ဝင်မည်
+    </button>
+</div>
+
+<!-- Main App Page -->
+<div class="card hidden" id="mainPage">
+    <div class="user-info">
+        <img id="uPhoto" class="user-photo" src="">
+        <h3 id="uName" style="margin: 5px 0;"></h3>
+        <p id="uEmail" style="color: #888; font-size: 12px; margin: 0;"></p>
+    </div>
+
+    <div class="btn-group">
+        <button class="action btn-in" onclick="saveData('Check-in')">Check-in</button>
+        <button class="action btn-out" onclick="saveData('Check-out')">Check-out</button>
+    </div>
+
+    <div id="status"></div>
+    <div class="logout" onclick="logout()">အကောင့်ထွက်မည်</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHcwDN1dMMOWGNwKmZkbE2XDqKstLPnqQ",
+        authDomain: "nyinyisoe-doe-servic.firebaseapp.com",
+        projectId: "nyinyisoe-doe-servic",
+        storageBucket: "nyinyisoe-doe-servic.firebasestorage.app",
+        messagingSenderId: "1061078310569",
+        appId: "1:1061078310569:web:ce8ed2104b9107bfa8d3b8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    // Login Function
+    window.login = () => {
+        signInWithPopup(auth, provider).catch(err => alert("Error: " + err.message));
+    };
+
+    // Auth Status Watcher
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('mainPage').classList.remove('hidden');
+            document.getElementById('uName').innerText = user.displayName;
+            document.getElementById('uEmail').innerText = user.email;
+            document.getElementById('uPhoto').src = user.photoURL || "https://via.placeholder.com/80";
+        } else {
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('mainPage').classList.add('hidden');
+        }
+    });
+
+    // Attendance Save Function
+    window.saveData = async (status) => {
+        const user = auth.currentUser;
+        const statusDiv = document.getElementById('status');
+        statusDiv.innerText = "သိမ်းဆည်းနေပါသည်...";
+        statusDiv.style.color = "#666";
+
+        try {
+            await addDoc(collection(db, "attendance"), {
+                name: user.displayName,
+                email: user.email,
+                status: status,
+                timestamp: serverTimestamp(),
+                photo: user.photoURL
+            });
+            statusDiv.innerHTML = `<span style="color:green;">✓ ${status} အောင်မြင်ပါသည်</span>`;
+            setTimeout(() => statusDiv.innerText = "", 3000);
+        } catch (e) {
+            statusDiv.innerText = "Error: " + e.message;
+            statusDiv.style.color = "red";
+        }
+    };
+
+    // Logout Function
+    window.logout = () => signOut(auth);
+</script>
+
+</body>
+</html>
