@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - DOE SERVICE</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th { background-color: #007bff; color: white; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background-color: #f1f1f1; }
+        .user-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .status-in { color: #28a745; font-weight: bold; }
+        .status-out { color: #dc3545; font-weight: bold; }
+        .badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ဝန်ထမ်းများဝင်/ထွက်မှတ်တမ်း (Admin)</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ပုံ</th>
+                <th>အမည်</th>
+                <th>အခြေအနေ</th>
+                <th>နေ့ရက်/အချိန်</th>
+                <th>အီးမေးလ်</th>
+            </tr>
+        </thead>
+        <tbody id="attendance-list">
+            </tbody>
+    </table>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // သင့် Firebase Config (မူလအတိုင်း ပြန်ထည့်ပေးထားပါသည်)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHcwDN1dMMOWGNwKmZkbE2XDqKstLPnqQ",
+        authDomain: "nyinyisoe-doe-servic.firebaseapp.com",
+        projectId: "nyinyisoe-doe-servic",
+        storageBucket: "nyinyisoe-doe-servic.firebasestorage.app",
+        messagingSenderId: "1061078310569",
+        appId: "1:1061078310569:web:ce8ed2104b9107bfa8d3b8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Attendance စာရင်းကို အချိန်အလိုက် Real-time ဆွဲထုတ်ခြင်း
+    const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        const tbody = document.getElementById('attendance-list');
+        tbody.innerHTML = ""; // ရှင်းလင်းပြီး အသစ်ပြန်ထည့်
+
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const time = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString('my-MM') : "Loading...";
+            
+            const row = `
+                <tr>
+                    <td><img src="${data.photo || 'https://via.placeholder.com/40'}" class="user-img"></td>
+                    <td>${data.name}</td>
+                    <td class="${data.status === 'Check-in' ? 'status-in' : 'status-out'}">${data.status}</td>
+                    <td>${time}</td>
+                    <td style="font-size: 11px; color: #666;">${data.email}</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    });
+</script>
+
+</body>
+</html>
